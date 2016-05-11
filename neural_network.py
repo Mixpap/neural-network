@@ -2,33 +2,42 @@ import numpy as np
 import random
 
 
-def activation_function(case, a):
+def activation_function(case):
     """
-
+    Returns the corresponding activation function
     :param case: The number of the activation function
-    :param a: the matrix that needs to be passed through the activation
-    function
-    :return:
+    :return: the activation function to be used by the neurons
+     in the hidden layer
     """
-    # h(a) = log(1 + exp^a )
+    # h(a) = log(1 + exp^a)
     # h(a) = (exp^a - exp^(-a))/(exp^a + exp^(-a))
     # h(a) = cos(a)
-    if case == 1:
-        return np.log(1 + np.exp(a), 2)
-    elif case == 2:
+    def logarithmic(a):
+        return np.log(1 + np.exp(a))
+    def tanh(a):
         return (np.exp(a)-np.exp(-a))/(np.exp(a)+np.exp(-a))
-    elif case == 3:
+    def cosine(a):
         return np.cos(a)
+    if case == 1:
+        return logarithmic
+    elif case == 2:
+        return tanh
+    elif case == 3:
+        return cosine
 
 
 class NeuralNetwork:
 
-    def __init__(self, input_dim, hidden_neurons, number_of_outputs,
+    def __init__(self, input_dim, hidden_layer_activation_function,
+                 hidden_neurons,
+                 number_of_outputs,
                  hidden_bias=None,
                  output_bias=None):
         self.input_dim = input_dim
         self.hidden_layer = Layer(hidden_neurons, hidden_bias)
         self.output_layer = Layer(number_of_outputs, output_bias)
+        self.hidden_activation = activation_function(
+            hidden_layer_activation_function)
 
 
     def forward_prop(self, input_data):
