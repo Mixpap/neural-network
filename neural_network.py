@@ -2,10 +2,14 @@ import numpy as np
 import numpy.matlib
 import random
 
+def softmax(w):
+    return np.exp(w) / np.sum(np.exp(w))
+
 
 def activation_function(case):
     """
-    Returns the corresponding activation function
+    Returns the corresponding activation function and the derrivative of
+    this function
     :param case: The number of the activation function
     :return: the activation function to be used by the neurons
      in the hidden layer
@@ -20,11 +24,12 @@ def activation_function(case):
         :return:
         """
         m = np.max(0,a);#CHECK
-        return m + np.log( np.exp(-m) + np.exp(a-m))
+        return m + np.log( np.exp(-m) + np.exp(a-m)), 1/1+np.exp(-a)
     def tanh(a):
-        return (np.exp(a)-np.exp(-a))/(np.exp(a)+np.exp(-a))
+        return (np.exp(a)-np.exp(-a))/(np.exp(a)+np.exp(-a)), 1- (np.exp(
+            a)-np.exp(-a))/(np.exp(a)+np.exp(-a))**2
     def cosine(a):
-        return np.cos(a)
+        return np.cos(a), -np.sin(a)
     if case == 1:
         return logarithmic
     elif case == 2:
@@ -35,27 +40,33 @@ def activation_function(case):
 
 class NeuralNetwork:
 
-    def __init__(self, input_dim, hidden_layer_activation_function,
+    def __init__(self, x_train, hidden_layer_activation_function,
                  hidden_neurons,
-                 number_of_outputs, lamda,
+                 number_of_outputs, lamda, iter, t, eta,tol,
                  hidden_bias=None,
                  output_bias=None):
-        self.input_dim = input_dim
+        self.iter = iter
+        self.x_train = x_train
+        self.t = t
+        self.lamda = lamda
+        self.eta = eta
+        self.tol = tol
         self.number_of_outputs = number_of_outputs
         self.hidden_layer = Layer(hidden_neurons, hidden_bias)
         self.output_layer = Layer(number_of_outputs, output_bias)
-        self.hidden_activation = activation_function(
+        self.hidden_activation, self.grad_activation = activation_function(
             hidden_layer_activation_function)
-        self.w1_init = np.random.randn(hidden_neurons, 784)
-        self.w2_init = np.random.randn(number_of_outputs, hidden_neurons)
+        #initialize weights
+        self.w1 = np.random.randn(hidden_neurons, np.size(input,0)+1)
+        self.w2 = np.random.randn(number_of_outputs, hidden_neurons+1)
 
-    def calculate_cost(self, x, t, lamda, w1, w2, y):
+    def forward_prop(self, x, t, w1, w2):
         """
+        feed forward and get error
         sum(sum( T.*Y )) - sum(M)  - sum(log(sum(exp(Y - repmat(M, 1, K)), 2)))
           - (0.5*lambda)*sum(sum(W2.*W2));
         :param x:
         :param t:
-        :param lamda:
         :param w1:
         :param w2:
         :return:
@@ -71,17 +82,29 @@ class NeuralNetwork:
         E = np.sum(np.sum(np.dot(t, y)) - np.sum(max_error)- np.sum(np.log(
             np.sum(np.exp(y-np.matlib.repmat(max_error, 1,
                                              self.number_of_outputs)),
-                   2)))-(1/2*lamda)*np.sum(np.sum(w2**2)))
-        return E
+                   2)))-(1/2*self.lamda)*np.sum(np.sum(w2**2)))
+        s = softmax(y)
+        gradw2 = np.transpose((t-s))*z_with_bias - self.lamda*w2
+        #get rid of the bias
+        w2 = w2[:, 2:]
+        gradw1 = w2*np.transpose(t-s)*self.grad_activation(x*w1)*x
+        return E, gradw1, gradw2
+
+    def train(self):
+        e_old = -np.inf
+        for i in range(iter):
+            e, gradw1, gradw2 = self.forward_prop(self.x_train, self.t,
+                                                  self.w1,
+                                             self.w2)
+            print i," iteration cost =",e
+            if abs(e - e_old) < self.tol:
+                break
+            self.w1 = self.w1 + self.eta*gradw1
+            self.w2 = self.w2 + self.eta*gradw2
+            e_old = e
 
 
-    def forward_prop(self, input_data):
-        """
-        We propagate the input data into the neural network
-        :param input_data:
-        :return:
-        """
-        pass
+
 
 
 class Layer:
