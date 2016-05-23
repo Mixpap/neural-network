@@ -5,7 +5,6 @@ A simple implementation of a neural network developed as part of the course Mach
 
 ## Authors
 
-* **Iason Andriopoulos** 
 * **Ilias Sarantopoulos** 
 
 
