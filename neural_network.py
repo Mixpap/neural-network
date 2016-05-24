@@ -5,6 +5,37 @@ import random
 def softmax(w):
     return np.exp(w) / np.sum(np.exp(w))
 
+def load_data():
+    train_files = ['data/train%d.txt'% (i,) for i in range(10)]
+    test_files = ['data/test%d.txt'% (i,) for i in range(10) ]
+    counter = 0
+    tmp = []
+    for i in train_files:
+        with open(i, 'r') as fp:
+            tmp += fp.readlines()
+    #load train data in N*D array (60000x784 for MNIST)
+    train_data = np.array([[j for j in i.split(" ")] for i in tmp])
+    print "Train data array size: ", train_data.shape
+    tmp = []
+    for i in test_files:
+        with open(i, 'r') as fp:
+            tmp += fp.readlines()
+    #load test data in N*D array (10000x784 for MNIST)
+    test_data = np.array([[j for j in i.split(" ")] for i in tmp])
+    print "Test data array size: ", test_data.shape
+
+    tmp = []
+    for i, _file in enumerate(train_files):
+        count=0
+        #print i, _file
+        with open(_file , 'r') as fp:
+            for line in fp:
+                tmp.append([1 if j == i else 0 for j in range(0,10)])
+            # tried this way but didnt work
+            #truth.append([1 if j == i else 0 for j in range(0,10)] for line in fp)
+    truth = np.array(tmp)
+    print "Truth array size: ", truth.shape
+    return train_data, test_data, truth
 
 def activation_function(case):
     """
@@ -126,29 +157,10 @@ class Neuron:
 """
 
 if __name__ == '__main__':
-    train_files = ['data/train%d.txt'% (i,) for i in range(10)]
-    test_files = ['data/test%d.txt'% (i,) for i in range(10) ]
-    counter = 0
-    tmp = []
-    for i in train_files:
-        with open(i, 'r') as fp:
-            tmp += fp.readlines()
-    train_data = np.array([[j for j in i.split(" ")] for i in tmp])
-    print "Train data array size: ", train_data.shape
-    tmp = []
-    for i in test_files:
-        with open(i, 'r') as fp:
-            tmp += fp.readlines()
-    test_data = np.array([[j for j in i.split(" ")] for i in tmp])
-    print "Test data array size: ", test_data.shape
-    tmp = []
-    for i, _file in enumerate(train_files):
-        count=0
-        #print i, _file
-        with open(_file , 'r') as fp:
-            for line in fp:
-                tmp.append([1 if j == i else 0 for j in range(0,10)])
-            # tried this way but didnt work
-            #truth.append([1 if j == i else 0 for j in range(0,10)] for line in fp)
-    truth = np.array(tmp)
-    print "Truth array size: ", truth.shape
+    x, test, t = load_data()
+    hidden_neurons = 200
+    lamda = 0.1
+    eta = 0.2
+    iter = 200
+    tol = 0.00001
+    nn = NeuralNetwork(x, 1, hidden_neurons, 10, 0.1, iter, t, eta, tol)
