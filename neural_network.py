@@ -42,7 +42,7 @@ class NeuralNetwork:
 
     def __init__(self, x_train, hidden_layer_activation_function,
                  hidden_neurons,
-                 number_of_outputs, lamda, iter, t, eta,tol,
+                 number_of_outputs, lamda, iter, t, eta, tol,
                  hidden_bias=None,
                  output_bias=None):
         self.iter = iter
@@ -52,8 +52,6 @@ class NeuralNetwork:
         self.eta = eta
         self.tol = tol
         self.number_of_outputs = number_of_outputs
-        self.hidden_layer = Layer(hidden_neurons, hidden_bias)
-        self.output_layer = Layer(number_of_outputs, output_bias)
         self.hidden_activation, self.grad_activation = activation_function(
             hidden_layer_activation_function)
         #initialize weights
@@ -105,8 +103,7 @@ class NeuralNetwork:
 
 
 
-
-
+"""
 class Layer:
 
     def __init__(self, num_of_neurons, bias=None):
@@ -126,7 +123,28 @@ class Neuron:
     def get_info(self):
         print ', '.join("%s: %s" % item for item in vars(self).items())
 
-
+"""
 
 if __name__ == '__main__':
-    pass
+    train_files = ['data/train%d.txt'% (i,) for i in range(10)]
+    test_files = ['data/test%d.txt'% (i,) for i in range(10) ]
+    counter = 0
+    for i in test_files:
+        with open(i, 'r') as fp:
+            counter += len(fp.readlines())
+    print "train_data = ", counter
+    b = np.array(zeros[0].split(" ")).reshape(28,28)
+    img = Image.fromarray(b, 'RGB')
+    imgplot = plt.imshow(img)
+    tmp = []
+    for i in train_files:
+        with open(i, 'r') as fp:
+            tmp += fp.readlines()
+    print len(tmp)
+    train_data = np.array([[j for j in i.split(" ")] for i in tmp])
+    tmp = []
+    for i in test_files:
+        with open(i, 'r') as fp:
+            tmp += fp.readlines()
+    print len(tmp)
+    test_data = np.array([[j for j in i.split(" ")] for i in tmp])
