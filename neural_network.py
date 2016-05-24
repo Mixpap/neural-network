@@ -129,22 +129,26 @@ if __name__ == '__main__':
     train_files = ['data/train%d.txt'% (i,) for i in range(10)]
     test_files = ['data/test%d.txt'% (i,) for i in range(10) ]
     counter = 0
-    for i in test_files:
-        with open(i, 'r') as fp:
-            counter += len(fp.readlines())
-    print "train_data = ", counter
-    b = np.array(zeros[0].split(" ")).reshape(28,28)
-    img = Image.fromarray(b, 'RGB')
-    imgplot = plt.imshow(img)
     tmp = []
     for i in train_files:
         with open(i, 'r') as fp:
             tmp += fp.readlines()
-    print len(tmp)
     train_data = np.array([[j for j in i.split(" ")] for i in tmp])
+    print "Train data array size: ", train_data.shape
     tmp = []
     for i in test_files:
         with open(i, 'r') as fp:
             tmp += fp.readlines()
-    print len(tmp)
     test_data = np.array([[j for j in i.split(" ")] for i in tmp])
+    print "Test data array size: ", test_data.shape
+    tmp = []
+    for i, _file in enumerate(train_files):
+        count=0
+        #print i, _file
+        with open(_file , 'r') as fp:
+            for line in fp:
+                tmp.append([1 if j == i else 0 for j in range(0,10)])
+            # tried this way but didnt work
+            #truth.append([1 if j == i else 0 for j in range(0,10)] for line in fp)
+    truth = np.array(tmp)
+    print "Truth array size: ", truth.shape
