@@ -14,14 +14,14 @@ def load_data():
         with open(i, 'r') as fp:
             tmp += fp.readlines()
     #load train data in N*D array (60000x784 for MNIST)
-    train_data = np.array([[j for j in i.split(" ")] for i in tmp])
+    train_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')
     print "Train data array size: ", train_data.shape
     tmp = []
     for i in test_files:
         with open(i, 'r') as fp:
             tmp += fp.readlines()
     #load test data in N*D array (10000x784 for MNIST)
-    test_data = np.array([[j for j in i.split(" ")] for i in tmp])
+    test_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')
     print "Test data array size: ", test_data.shape
 
     tmp = []
@@ -33,7 +33,7 @@ def load_data():
                 tmp.append([1 if j == i else 0 for j in range(0,10)])
             # tried this way but didnt work
             #truth.append([1 if j == i else 0 for j in range(0,10)] for line in fp)
-    truth = np.array(tmp)
+    truth = np.array(tmp, dtype='int')
     print "Truth array size: ", truth.shape
     return train_data, test_data, truth
 
@@ -99,6 +99,7 @@ class NeuralNetwork:
         #initialize weights
         self.w1 = np.random.randn(hidden_neurons, np.size(x_train, 1)+1)
         print "W(1) is of size M x(D+1) :", self.w1.shape
+        print type(self.w1), type(self.w1[0]), type(self.w1[0,0])
         self.w2 = np.random.randn(number_of_outputs, hidden_neurons+1)
         print "W(2) is of size K x(M+1) :", self.w2.shape
 
@@ -114,8 +115,6 @@ class NeuralNetwork:
         :return:
         """
         #feed forward
-        print "x", x
-        print "w1", w1
         z = self.hidden_activation(x*w1) #check matrix
         #add bias to z
         z_with_bias = np.ones((np.size(z,1),np.size(z,0)+1))
@@ -132,7 +131,6 @@ class NeuralNetwork:
         #get rid of the bias
         w2 = w2[:, 2:]
         gradw1 = w2*np.transpose(t-s)*self.grad_activation(x*w1)*x
-        print "gradw1", gradw1
         return E, gradw1, gradw2
 
     def train(self):
