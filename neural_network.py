@@ -54,19 +54,30 @@ def activation_function(case):
         :param a:
         :return:
         """
-        m = np.max(0,a);#CHECK
-        return m + np.log( np.exp(-m) + np.exp(a-m)), 1/1+np.exp(-a)
+        m = np.max(0,a);  #CHECK
+        return m + np.log( np.exp(-m) + np.exp(a-m))
+
+    def grad_logarithm(a):
+        return 1/1+np.exp(-a)
+
     def tanh(a):
-        return (np.exp(a)-np.exp(-a))/(np.exp(a)+np.exp(-a)), 1- (np.exp(
-            a)-np.exp(-a))/(np.exp(a)+np.exp(-a))**2
+        return (np.exp(a)-np.exp(-a))/(np.exp(a)+np.exp(-a))
+
+    def grad_tanh(a):
+        return 1- (np.exp(a)-np.exp(-a))/(np.exp(a)+np.exp(-a))**2
+
     def cosine(a):
-        return np.cos(a), -np.sin(a)
+        return np.cos(a)
+
+    def grad_cosine(a):
+        return -np.sin(a)
+
     if case == 1:
-        return logarithmic
+        return logarithmic, grad_logarithm
     elif case == 2:
-        return tanh
+        return tanh, grad_tanh
     elif case == 3:
-        return cosine
+        return cosine, grad_cosine
 
 
 class NeuralNetwork:
@@ -86,8 +97,10 @@ class NeuralNetwork:
         self.hidden_activation, self.grad_activation = activation_function(
             hidden_layer_activation_function)
         #initialize weights
-        self.w1 = np.random.randn(hidden_neurons, np.size(input,0)+1)
+        self.w1 = np.random.randn(hidden_neurons, np.size(x_train, 1)+1)
+        print "W(1) is of size M x(D+1) :", self.w1.shape
         self.w2 = np.random.randn(number_of_outputs, hidden_neurons+1)
+        print "W(2) is of size K x(M+1) :", self.w2.shape
 
     def forward_prop(self, x, t, w1, w2):
         """
@@ -163,4 +176,5 @@ if __name__ == '__main__':
     eta = 0.2
     iter = 200
     tol = 0.00001
-    nn = NeuralNetwork(x, 1, hidden_neurons, 10, 0.1, iter, t, eta, tol)
+    nn = NeuralNetwork(x, 2, hidden_neurons, 10, 0.1, iter, t, eta, tol)
+
