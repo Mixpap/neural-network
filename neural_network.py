@@ -114,6 +114,8 @@ class NeuralNetwork:
         :return:
         """
         #feed forward
+        print "x", x
+        print "w1", w1
         z = self.hidden_activation(x*w1) #check matrix
         #add bias to z
         z_with_bias = np.ones((np.size(z,1),np.size(z,0)+1))
@@ -155,12 +157,12 @@ class NeuralNetwork:
                                               self.w1,
                                               self.w2) # TODO lamda should be here
 
-        numerical_grad_1 = np.zeros(200, 785)
-        numerical_grad_2 = np.zeros(10, 201)
+        numerical_grad_1 = np.zeros((200, 785))
+        numerical_grad_2 = np.zeros((10, 201))
 
         #gradcheck for w1
-        for k in range(0, 10):
-            for d in range(0, 201):
+        for k in range(0, 200):
+            for d in range(0, 785):
                 w_tmp = np.copy(self.w1)
                 w_tmp[k,d] = w_tmp[k,d] + epsilon
                 E_plus, _, _ = self.forward_prop(self.x_train,
