@@ -130,6 +130,7 @@ class NeuralNetwork:
         #get rid of the bias
         w2 = w2[:, 2:]
         gradw1 = w2*np.transpose(t-s)*self.grad_activation(x*w1)*x
+        print "gradw1", gradw1
         return E, gradw1, gradw2
 
     def train(self):
@@ -144,6 +145,69 @@ class NeuralNetwork:
             self.w1 = self.w1 + self.eta*gradw1
             self.w2 = self.w2 + self.eta*gradw2
             e_old = e
+
+
+    def gradcheck(self, epsilon = 0.005):
+
+
+        E, gradw1, gradw2 = self.forward_prop(self.x_train,
+                                              self.t,
+                                              self.w1,
+                                              self.w2) # TODO lamda should be here
+
+        numerical_grad_1 = np.zeros(200, 785)
+        numerical_grad_2 = np.zeros(10, 201)
+
+        #gradcheck for w1
+        for k in range(0, 10):
+            for d in range(0, 201):
+                w_tmp = np.copy(self.w1)
+                w_tmp[k,d] = w_tmp[k,d] + epsilon
+                E_plus, _, _ = self.forward_prop(self.x_train,
+                                                 self.t,
+                                                 w_tmp,
+                                                 self.w2)
+
+                w_tmp = np.copy(self.w1)
+                w_tmp[k,d] = w_tmp[k,d] - epsilon
+                E_minus, _, _ = self.forward_prop(self.x_train,
+                                                 self.t,
+                                                 w_tmp,
+                                                 self.w2)
+
+                numerical_grad_1[k,d] = (E_plus - E_minus)/(2 * epsilon)
+
+                #Absolute norm
+                print "The absolute norm for w1 is %d" %(np.amax(np.abs(gradw1 - numerical_grad_1)),)
+
+
+        E, gradw1, gradw2 = self.forward_prop(self.x_train,
+                                              self.t,
+                                              self.w1,
+                                              self.w2) # TODO lamda should be here
+
+        #gradcheck for w2
+        for k in range(0, 10):
+            for d in range(0, 201):
+                w_tmp = np.copy(self.w2)
+                w_tmp[k,d] = w_tmp[k,d] + epsilon
+                E_plus, _, _ = self.forward_prop(self.x_train,
+                                                 self.t,
+                                                 self.w1,
+                                                 w_tmp)
+
+                w_tmp = np.copy(self.w2)
+                w_tmp[k,d] = w_tmp[k,d] - epsilon
+                E_minus, _, _ = self.forward_prop(self.x_train,
+                                                 self.t,
+                                                 self.w1,
+                                                 w_tmp)
+
+                numerical_grad_2[k,d] = (E_plus - E_minus)/(2 * epsilon)
+
+                #Absolute norm
+                print "The absolute norm for w2 is %d" %(np.abs(gradw2 - numerical_grad_2),)
+
 
 
 
@@ -177,4 +241,6 @@ if __name__ == '__main__':
     iter = 200
     tol = 0.00001
     nn = NeuralNetwork(x, 2, hidden_neurons, 10, 0.1, iter, t, eta, tol)
+
+    nn.gradcheck()
 
