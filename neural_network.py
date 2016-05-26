@@ -127,14 +127,6 @@ class NeuralNetwork:
         # multiplication and transpose
         y = np.dot(z_with_bias, w2.transpose()) #check transpose(normaly w2)
         max_error = np.argmax(y, 1)
-        print max_error.shape
-        print np.sum(np.dot(t, y.transpose()))
-        print np.sum(max_error)
-        y-np.tile(max_error, (self.number_of_outputs,
-                                               1 )).transpose()
-        (1/2*self.lamda)*np.sum(np.sum(np.linalg.norm(w2)**2))
-        #np.sum(np.log(np.sum(np.exp(y-np.matlib.repmat(max_error, 1,
-        # self.number_of_outputs)),2)))-(1/2*self.lamda)*np.sum(np.sum(np.dot(w2**2))))
         E = np.sum(np.sum(np.dot(t, y.transpose())) - np.sum(max_error)- np.sum(
             np.log(
             np.sum(np.exp(y-np.tile(max_error, (self.number_of_outputs,
