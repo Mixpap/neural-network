@@ -1,10 +1,12 @@
 from __future__ import division
 import numpy as np
 import numpy.matlib
-import random
+
 
 def softmax(w):
-    return np.exp(w) / np.sum(np.exp(w))
+    #return np.exp(w) / np.sum(np.exp(w))    e ^ (x - max(x)) / sum(e^(x - max(x))
+    return np.exp(w - np.max(w))/ np.sum(np.exp(w - np.max(w)))
+
 
 def load_data():
     train_files = ['data/train%d.txt'% (i,) for i in range(10)]
@@ -101,7 +103,7 @@ class NeuralNetwork:
         #initialize weights
         self.w1 = np.random.randn(hidden_neurons, np.size(x_train, 1)+1)
         print "W(1) is of size M x(D+1) :", self.w1.shape
-        print type(self.w1), type(self.w1[0]), type(self.w1[0,0])
+        #print type(self.w1), type(self.w1[0]), type(self.w1[0,0])
         self.w2 = np.random.randn(number_of_outputs, hidden_neurons+1)
         print "W(2) is of size K x(M+1) :", self.w2.shape
 
@@ -128,9 +130,9 @@ class NeuralNetwork:
         y = np.dot(z_with_bias, w2.transpose()) #check transpose(normaly w2)
         max_error = np.argmax(y, 1)
         first = np.sum(np.sum(np.dot(t, y.transpose()))) - np.sum(max_error)
-        _tile = np.kron(np.ones(max_error.shape[0],
-                                self.number_of_outputs), max_error).transpose()
-        third = y - _tile
+        #_tile = np.kron(np.ones(max_error.shape[0], self.number_of_outputs), max_error).transpose()
+        repmat = np.matlib.repmat(max_error,self.number_of_outputs, 1)
+        third = y - repmat.T
         _exp = np.exp(third)
         E = np.sum(np.sum(np.dot(t, y.transpose()))) - np.sum(max_error)- \
             np.sum(
@@ -155,10 +157,10 @@ class NeuralNetwork:
             error, gradw1, gradw2 = self.forward_prop(self.x_train, self.t,
                                                   self.w1,
                                              self.w2)
-            print "iteration #", i,",cost =", error, ", gradw1 : " \
+            print "iteration #", i,",error =", error, ", gradw1 : " \
                                                                , gradw1[0,0],\
                 ", gradw2 :", gradw2[0,0]
-            if abs(error - e_old) < self.tol:
+            if np.absolute(error - e_old) < self.tol:
                 break
             self.w1 = self.w1 + self.eta*gradw1
             self.w2 = self.w2 + self.eta*gradw2
@@ -254,7 +256,7 @@ if __name__ == '__main__':
     hidden_neurons = 200
     lamda = 0.1
     eta = 0.2
-    iter = 50
+    iter = 200
     tol = 0.01
     nn = NeuralNetwork(x, 3, hidden_neurons, 10, 0.1, iter, t, eta, tol)
 
