@@ -147,8 +147,9 @@ class NeuralNetwork:
             e_old = e
 
 
-    def gradcheck(self, epsilon = 0.005):
+    def gradcheck(self):
 
+        epsilon = np.finfo(float).eps
 
         E, gradw1, gradw2 = self.forward_prop(self.x_train,
                                               self.t,
