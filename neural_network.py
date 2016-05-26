@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import numpy.matlib
 import random
@@ -35,7 +36,7 @@ def load_data():
             #truth.append([1 if j == i else 0 for j in range(0,10)] for line in fp)
     truth = np.array(tmp, dtype='int')
     print "Truth array size: ", truth.shape
-    return train_data, test_data, truth
+    return train_data[:100], test_data[:100], truth[:100]
 
 def activation_function(case):
     """
@@ -54,13 +55,13 @@ def activation_function(case):
         :param a:
         :return:
         """
-        m = np.max(0,a);  #CHECK
+        m = np.maximum(0,a);  #CHECK
         return m + np.log( np.exp(-m) + np.exp(a-m))
 
     def grad_logarithm(a):
         return 1/1+np.exp(-a)
 
-    def tanh(a):
+    def tanh(a): #TODO check stability
         return (np.exp(a)-np.exp(-a))/(np.exp(a)+np.exp(-a))
 
     def grad_tanh(a):
@@ -115,17 +116,30 @@ class NeuralNetwork:
         :return:
         """
         #feed forward
-        z = self.hidden_activation(x*w1) #check matrix
+        x_with_bias = np.ones((np.size(x, 0), np.size(x, 1)+1))
+        x_with_bias[:, 1:] = x
+        print "x without bias :",x.shape,"x with bias :", x_with_bias.shape
+        z = self.hidden_activation(np.dot(x_with_bias,w1.transpose()))
+        #check matrix
         #add bias to z
-        z_with_bias = np.ones((np.size(z,1),np.size(z,0)+1))
-        z_with_bias[:,1:] = z
+        z_with_bias = np.ones((np.size(z, 0),np.size(z, 1)+1))
+        z_with_bias[:, 1:] = z
         # multiplication and transpose
-        y = z*w2 #check transpose(normaly w2)
-        max_error = np.max(y, 1)
-        E = np.sum(np.sum(np.dot(t, y)) - np.sum(max_error)- np.sum(np.log(
-            np.sum(np.exp(y-np.matlib.repmat(max_error, 1,
-                                             self.number_of_outputs)),
-                   2)))-(1/2*self.lamda)*np.sum(np.sum(w2**2)))
+        y = np.dot(z_with_bias, w2.transpose()) #check transpose(normaly w2)
+        max_error = np.argmax(y, 1)
+        print max_error.shape
+        print np.sum(np.dot(t, y.transpose()))
+        print np.sum(max_error)
+        y-np.tile(max_error, (self.number_of_outputs,
+                                               1 )).transpose()
+        (1/2*self.lamda)*np.sum(np.sum(np.linalg.norm(w2)**2))
+        #np.sum(np.log(np.sum(np.exp(y-np.matlib.repmat(max_error, 1,
+        # self.number_of_outputs)),2)))-(1/2*self.lamda)*np.sum(np.sum(np.dot(w2**2))))
+        E = np.sum(np.sum(np.dot(t, y.transpose())) - np.sum(max_error)- np.sum(
+            np.log(
+            np.sum(np.exp(y-np.tile(max_error, (self.number_of_outputs,
+                                               1)).transpose()),
+                   1)))-(1/2*self.lamda)*np.sum(np.sum(np.linalg.norm(w2)**2)))
         s = softmax(y)
         gradw2 = np.transpose((t-s))*z_with_bias - self.lamda*w2
         #get rid of the bias
@@ -241,7 +255,7 @@ if __name__ == '__main__':
     eta = 0.2
     iter = 200
     tol = 0.00001
-    nn = NeuralNetwork(x, 2, hidden_neurons, 10, 0.1, iter, t, eta, tol)
+    nn = NeuralNetwork(x, 1, hidden_neurons, 10, 0.1, iter, t, eta, tol)
 
     nn.gradcheck()
 
