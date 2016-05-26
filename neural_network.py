@@ -94,6 +94,7 @@ class NeuralNetwork:
         self.lamda = lamda
         self.eta = eta
         self.tol = tol
+        self.hidden_neurons = hidden_neurons
         self.number_of_outputs = number_of_outputs
         self.hidden_activation, self.grad_activation = activation_function(
             hidden_layer_activation_function)
@@ -118,7 +119,6 @@ class NeuralNetwork:
         #feed forward
         x_with_bias = np.ones((np.size(x, 0), np.size(x, 1)+1))
         x_with_bias[:, 1:] = x
-        print "x without bias :",x.shape,"x with bias :", x_with_bias.shape
         z = self.hidden_activation(np.dot(x_with_bias,w1.transpose()))
         #check matrix
         #add bias to z
@@ -127,30 +127,42 @@ class NeuralNetwork:
         # multiplication and transpose
         y = np.dot(z_with_bias, w2.transpose()) #check transpose(normaly w2)
         max_error = np.argmax(y, 1)
-        E = np.sum(np.sum(np.dot(t, y.transpose())) - np.sum(max_error)- np.sum(
+        first = np.sum(np.sum(np.dot(t, y.transpose()))) - np.sum(max_error)
+        _tile = np.kron(np.ones(max_error.shape[0],
+                                self.number_of_outputs), max_error).transpose()
+        third = y - _tile
+        _exp = np.exp(third)
+        E = np.sum(np.sum(np.dot(t, y.transpose()))) - np.sum(max_error)- \
+            np.sum(
             np.log(
             np.sum(np.exp(y-np.tile(max_error, (self.number_of_outputs,
                                                1)).transpose()),
-                   1)))-(1/2*self.lamda)*np.sum(np.sum(np.linalg.norm(w2)**2)))
+                   1))) -(0.5*self.lamda)*np.sum(np.sum(w2*w2))
         s = softmax(y)
-        gradw2 = np.transpose((t-s))*z_with_bias - self.lamda*w2
+        gradw2 = np.dot((t-s).transpose(),z_with_bias) - self.lamda*w2
         #get rid of the bias
-        w2 = w2[:, 2:]
-        gradw1 = w2*np.transpose(t-s)*self.grad_activation(x*w1)*x
+        first  =w2[:, 1:].T.dot((t-s).T)
+        second = first*self.grad_activation(x_with_bias.dot(w1.T)).T
+        final = second.dot(x_with_bias)
+        gradw1 = (w2[:, 1:].T.dot((t-s).T)*self.grad_activation(
+            x_with_bias.dot(w1.T)).T).dot(x_with_bias)
+
         return E, gradw1, gradw2
 
     def train(self):
         e_old = -np.inf
         for i in range(iter):
-            e, gradw1, gradw2 = self.forward_prop(self.x_train, self.t,
+            error, gradw1, gradw2 = self.forward_prop(self.x_train, self.t,
                                                   self.w1,
                                              self.w2)
-            print i," iteration cost =",e
-            if abs(e - e_old) < self.tol:
+            print "iteration #", i,",cost =", error, ", gradw1 : " \
+                                                               , gradw1[0,0],\
+                ", gradw2 :", gradw2[0,0]
+            if abs(error - e_old) < self.tol:
                 break
             self.w1 = self.w1 + self.eta*gradw1
             self.w2 = self.w2 + self.eta*gradw2
-            e_old = e
+            e_old = error
 
 
     def gradcheck(self):
@@ -161,13 +173,14 @@ class NeuralNetwork:
                                               self.t,
                                               self.w1,
                                               self.w2) # TODO lamda should be here
-
-        numerical_grad_1 = np.zeros((200, 785))
-        numerical_grad_2 = np.zeros((10, 201))
+        print "gradw2 : ", gradw2.shape
+        print "gradw1 : ", gradw1.shape
+        numerical_grad_1 = np.zeros(gradw1.shape)
+        numerical_grad_2 = np.zeros(gradw2.shape)
 
         #gradcheck for w1
-        for k in range(0, 200):
-            for d in range(0, 785):
+        for k in range(0, numerical_grad_1.shape[0]):
+            for d in range(0, numerical_grad_1.shape[1]):
                 w_tmp = np.copy(self.w1)
                 w_tmp[k,d] = w_tmp[k,d] + epsilon
                 E_plus, _, _ = self.forward_prop(self.x_train,
@@ -185,17 +198,13 @@ class NeuralNetwork:
                 numerical_grad_1[k,d] = (E_plus - E_minus)/(2 * epsilon)
 
                 #Absolute norm
-                print "The absolute norm for w1 is %d" %(np.amax(np.abs(gradw1 - numerical_grad_1)),)
+        print "The absolute norm for w1 is : ",(np.amax(np.abs(gradw1
+                                                                     - numerical_grad_1)),)
 
-
-        E, gradw1, gradw2 = self.forward_prop(self.x_train,
-                                              self.t,
-                                              self.w1,
-                                              self.w2) # TODO lamda should be here
 
         #gradcheck for w2
-        for k in range(0, 10):
-            for d in range(0, 201):
+        for k in range(0, numerical_grad_2.shape[0]):
+            for d in range(0, numerical_grad_2.shape[1]):
                 w_tmp = np.copy(self.w2)
                 w_tmp[k,d] = w_tmp[k,d] + epsilon
                 E_plus, _, _ = self.forward_prop(self.x_train,
@@ -213,7 +222,7 @@ class NeuralNetwork:
                 numerical_grad_2[k,d] = (E_plus - E_minus)/(2 * epsilon)
 
                 #Absolute norm
-                print "The absolute norm for w2 is %d" %(np.abs(gradw2 - numerical_grad_2),)
+        print "The absolute norm for w2 is %d" %(np.amax(np.abs(gradw1 - numerical_grad_1)),)
 
 
 
@@ -245,9 +254,9 @@ if __name__ == '__main__':
     hidden_neurons = 200
     lamda = 0.1
     eta = 0.2
-    iter = 200
-    tol = 0.00001
-    nn = NeuralNetwork(x, 1, hidden_neurons, 10, 0.1, iter, t, eta, tol)
+    iter = 50
+    tol = 0.01
+    nn = NeuralNetwork(x, 3, hidden_neurons, 10, 0.1, iter, t, eta, tol)
 
-    nn.gradcheck()
+    nn.train()
 
