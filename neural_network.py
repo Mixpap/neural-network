@@ -129,24 +129,24 @@ class NeuralNetwork:
         z_with_bias = np.ones((np.size(z, 0), np.size(z, 1)+1))
         z_with_bias[:, 1:] = z
         # multiplication and transpose
-        y = np.dot(z_with_bias, w2.T) #  check transpose(normaly w2)
+        y = np.dot(z_with_bias, w2.T)  # check transpose(normaly w2)
         max_error = np.argmax(y, 1)
         first = np.sum(np.sum(np.dot(t, y.T))) - np.sum(max_error)
         # _tile = np.kron(np.ones(max_error.shape[0],
         # self.number_of_outputs), max_error).T
-        repmat = np.matlib.repmat(max_error,self.number_of_outputs, 1)
+        repmat = np.matlib.repmat(max_error,  self.number_of_outputs, 1)
         third = y - repmat.T
         _exp = np.exp(third)
-        E = np.sum(np.sum(np.dot(t, y.T))) - np.sum(max_error)- \
+        E = np.sum(np.sum(np.dot(t, y.T))) - np.sum(max_error) - \
             np.sum(
             np.log(
             np.sum(np.exp(y-np.tile(max_error, (self.number_of_outputs,
-                                               1)).T),
+                                                1)).T),
                    1))) - (0.5*self.lamda)*np.sum(np.sum(w2*w2))
         s = softmax(y)
         gradw2 = np.dot((t-s).T, z_with_bias) - self.lamda*w2
         # get rid of the bias
-        first  =w2[:, 1:].T.dot((t-s).T)
+        first =w2[:, 1:].T.dot((t-s).T)
         second = first*self.grad_activation(x_with_bias.dot(w1.T)).T
         final = second.dot(x_with_bias)
         gradw1 = (w2[:, 1:].T.dot((t-s).T)*self.grad_activation(
@@ -158,9 +158,9 @@ class NeuralNetwork:
         e_old = -np.inf
         for i in range(iter):
             error, gradw1, gradw2 = self.forward_prop(self.x_train, self.t,
-                                                  self.w1,
-                                             self.w2)
-            print "iteration #", i,",error =", error, ", gradw1 : " \
+                                                      self.w1,
+                                                      self.w2)
+            print "iteration #", i, ",error =", error, ", gradw1 : " \
                                                                , gradw1[0,0],\
                 ", gradw2 :", gradw2[0,0]
             if np.absolute(error - e_old) < self.tol:
@@ -176,59 +176,57 @@ class NeuralNetwork:
         E, gradw1, gradw2 = self.forward_prop(self.x_train,
                                               self.t,
                                               self.w1,
-                                              self.w2) # TODO lamda should be here
+                                              self.w2)  # TODO lamda should
+        # be here
         print "gradw2 : ", gradw2.shape
         print "gradw1 : ", gradw1.shape
         numerical_grad_1 = np.zeros(gradw1.shape)
         numerical_grad_2 = np.zeros(gradw2.shape)
 
-        #gradcheck for w1
+        # gradcheck for w1
         for k in range(0, numerical_grad_1.shape[0]):
             for d in range(0, numerical_grad_1.shape[1]):
                 w_tmp = np.copy(self.w1)
-                w_tmp[k,d] = w_tmp[k,d] + epsilon
-                E_plus, _, _ = self.forward_prop(self.x_train,
+                w_tmp[k, d] = w_tmp[k, d] + epsilon
+                e_plus, _, _ = self.forward_prop(self.x_train,
                                                  self.t,
                                                  w_tmp,
                                                  self.w2)
 
                 w_tmp = np.copy(self.w1)
-                w_tmp[k,d] = w_tmp[k,d] - epsilon
-                E_minus, _, _ = self.forward_prop(self.x_train,
-                                                 self.t,
-                                                 w_tmp,
-                                                 self.w2)
+                w_tmp[k, d] = w_tmp[k, d] - epsilon
+                e_minus, _, _ = self.forward_prop(self.x_train,
+                                                  self.t,
+                                                  w_tmp,
+                                                  self.w2)
 
-                numerical_grad_1[k,d] = (E_plus - E_minus)/(2 * epsilon)
+                numerical_grad_1[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
-                #Absolute norm
-        print "The absolute norm for w1 is : ",(np.amax(np.abs(gradw1
-                                                                     - numerical_grad_1)),)
+                # Absolute norm
+        print "The absolute norm for w1 is : ", (np.amax(np.abs(gradw1 -
+                                                                numerical_grad_1)),)
 
-
-        #gradcheck for w2
+        # gradcheck for w2
         for k in range(0, numerical_grad_2.shape[0]):
             for d in range(0, numerical_grad_2.shape[1]):
                 w_tmp = np.copy(self.w2)
-                w_tmp[k,d] = w_tmp[k,d] + epsilon
-                E_plus, _, _ = self.forward_prop(self.x_train,
+                w_tmp[k, d] = w_tmp[k, d] + epsilon
+                e_plus, _, _ = self.forward_prop(self.x_train,
                                                  self.t,
                                                  self.w1,
                                                  w_tmp)
 
                 w_tmp = np.copy(self.w2)
-                w_tmp[k,d] = w_tmp[k,d] - epsilon
-                E_minus, _, _ = self.forward_prop(self.x_train,
-                                                 self.t,
-                                                 self.w1,
-                                                 w_tmp)
+                w_tmp[k, d] = w_tmp[k, d] - epsilon
+                e_minus, _, _ = self.forward_prop(self.x_train,
+                                                  self.t,
+                                                  self.w1,
+                                                  w_tmp)
 
-                numerical_grad_2[k,d] = (E_plus - E_minus)/(2 * epsilon)
+                numerical_grad_2[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
-                #Absolute norm
+                # Absolute norm
         print "The absolute norm for w2 is %d" %(np.amax(np.abs(gradw1 - numerical_grad_1)),)
-
-
 
 
 """
@@ -261,5 +259,4 @@ if __name__ == '__main__':
     iter = 50
     tol = 0.01
     nn = NeuralNetwork(x, 3, hidden_neurons, 10, 0.1, iter, t, eta, tol)
-
     nn.train()
