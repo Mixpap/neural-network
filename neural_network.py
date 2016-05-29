@@ -4,9 +4,11 @@ import numpy.matlib
 
 
 def softmax(w):
-    # return np.exp(w) / np.sum(np.exp(w))    e ^ (x - max(x)) / sum(e^(x -
-    # max(x))
-    return np.exp(w - np.max(w)) / np.sum(np.exp(w - np.max(w)))
+    max_error = np.max(w, 1)
+    m = np.array([max_error, ]*w.shape[1]).T
+    w = w - m
+    w = np.exp(w)
+    return w/(np.array([np.sum(w, 1),]*w.shape[1]).T)
 
 
 def load_data():
@@ -48,7 +50,7 @@ def load_data():
     test_truth = np.array(tmp, dtype='int')
     print "Train truth array size: ", train_truth.shape
     print "Test truth array size: ", test_truth.shape
-    return train_data[:100], test_data[:100], train_truth[:100], test_truth[:100]
+    return train_data, test_data, train_truth, test_truth
 
 
 def activation_function(case):
@@ -68,7 +70,11 @@ def activation_function(case):
         :param a:
         :return:
         """
+        print "a is ", a
+        if np.isinf(a).any() : print "we have an inf"; raise RuntimeError
+        if np.isnan(a).any() : print "we have an nan"; raise RuntimeError
         m = np.maximum(0, a)  #CHECK
+        #print "m is" , m
         return m + np.log(np.exp(-m) + np.exp(a-m))
 
     def grad_logarithm(a):
@@ -136,6 +142,8 @@ class NeuralNetwork:
         # feed forward
         x_with_bias = np.ones((np.size(x, 0), np.size(x, 1)+1))
         x_with_bias[:, 1:] = x
+        if np.isinf(np.dot(x_with_bias, w1.T)).any() : print "we have an inf"; raise RuntimeError
+        if np.isnan(np.dot(x_with_bias, w1.T)).any() : print "we have an nan"; raise RuntimeError
         z = self.hidden_activation(np.dot(x_with_bias, w1.T))
         # check matrix
         # add bias to z
@@ -148,13 +156,20 @@ class NeuralNetwork:
             np.sum(
             np.log(
             np.sum(np.exp(y - np.array([max_error, ]*self.number_of_outputs).T),
-                   1))) - (0.5*self.lamda)*np.sum(np.sum(w2*w2))
+                   1))) - (0.5*self.lamda)*np.sum(w2*w2)
+        """ alternative way to compute E with scipy
+        E = np.sum(t*y) - np.sum(max_error) - np.sum(scipy.misc.logsumexp(y - np.array([max_error,
+                                                                                        ]*self.number_of_outputs).T)) - (0.5*self.lamda)*np.sum(np.sum(w2*w2))
+        """
         s = softmax(y)
         gradw2 = np.dot((t-s).T, z_with_bias) - self.lamda*w2
         # get rid of the bias
-        first =w2[:, 1:].T.dot((t-s).T)
-        second = first*self.grad_activation(x_with_bias.dot(w1.T)).T
-        final = second.dot(x_with_bias)
+        #first =w2[:, 1:].T.dot((t-s).T)
+        #second = first*self.grad_activation(x_with_bias.dot(w1.T)).T
+        #final = second.dot(x_with_bias)
+
+        if np.isinf(self.grad_activation(x_with_bias.dot(w1.T))).any() : print "we have an inf"; raise RuntimeError
+        if np.isnan(self.grad_activation(x_with_bias.dot(w1.T))).any() : print "we have an nan"; raise RuntimeError
         gradw1 = (w2[:, 1:].T.dot((t-s).T)*self.grad_activation(x_with_bias.dot(w1.T)).T).dot(x_with_bias)
 
         return E, gradw1, gradw2
