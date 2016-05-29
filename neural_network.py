@@ -26,7 +26,6 @@ def load_data():
     # load test data in N*D array (10000x784 for MNIST)
     test_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')
     print "Test data array size: ", test_data.shape
-
     tmp = []
     for i, _file in enumerate(train_files):
         # print i, _file
@@ -36,9 +35,20 @@ def load_data():
             # tried this way but didnt work
             # truth.append([1 if j == i else 0 for j in range(0,10)] for
                 # line in fp)
-    truth = np.array(tmp, dtype='int')
-    print "Truth array size: ", truth.shape
-    return train_data[:100], test_data[:100], truth[:100]
+    train_truth = np.array(tmp, dtype='int')
+    del tmp[:]
+    for i, _file in enumerate(test_files):
+        # print i, _file
+        with open(_file, 'r') as fp:
+            for line in fp:
+                tmp.append([1 if j == i else 0 for j in range(0, 10)])
+            # tried this way but didnt work
+            # truth.append([1 if j == i else 0 for j in range(0,10)] for
+                # line in fp)
+    test_truth = np.array(tmp, dtype='int')
+    print "Train truth array size: ", train_truth.shape
+    print "Test truth array size: ", test_truth.shape
+    return train_data[:100], test_data[:100], train_truth[:100], test_truth[:100]
 
 
 def activation_function(case):
@@ -58,11 +68,11 @@ def activation_function(case):
         :param a:
         :return:
         """
-        m = np.maximum(0,a);  #CHECK
+        m = np.maximum(0, a)  #CHECK
         return m + np.log(np.exp(-m) + np.exp(a-m))
 
     def grad_logarithm(a):
-        return 1/1+np.exp(-a)
+        return 1/(1+np.exp(-a))
 
     def tanh(a): #  TODO check stability
         return (np.exp(a)-np.exp(-a)) / (np.exp(a)+np.exp(-a))
@@ -102,14 +112,13 @@ class NeuralNetwork:
         self.hidden_activation, self.grad_activation = activation_function(
             hidden_layer_activation_function)
         # initialize weights
-        self.w1 = np.random.randn(hidden_neurons, np.size(\
-                x_train, 1)+1)
+        self.w1 = np.random.randn(hidden_neurons, np.size(x_train, 1)+1)
         print "W(1) is of size M x(D+1) :", self.w1.shape
         # print type(self.w1), type(self.w1[0]), type(self.w1[0,0])
         self.w2 = np.random.randn(number_of_outputs, hidden_neurons+1)
         print "W(2) is of size K x(M+1) :", self.w2.shape
 
-    def forward_prop(self, x, t, w1, w2):
+    def forward_prop(self):
         """
         feed forward and get error
         sum(sum( T.*Y )) - sum(M)  - sum(log(sum(exp(Y - repmat(M, 1, K)), 2)))
@@ -120,6 +129,10 @@ class NeuralNetwork:
         :param w2:
         :return:
         """
+        x = self.x_train
+        t = self.t
+        w1 = self.w1
+        w2 = self.w2
         # feed forward
         x_with_bias = np.ones((np.size(x, 0), np.size(x, 1)+1))
         x_with_bias[:, 1:] = x
@@ -130,18 +143,11 @@ class NeuralNetwork:
         z_with_bias[:, 1:] = z
         # multiplication and transpose
         y = np.dot(z_with_bias, w2.T)  # check transpose(normaly w2)
-        max_error = np.argmax(y, 1)
-        first = np.sum(np.sum(np.dot(t, y.T))) - np.sum(max_error)
-        # _tile = np.kron(np.ones(max_error.shape[0],
-        # self.number_of_outputs), max_error).T
-        repmat = np.matlib.repmat(max_error,  self.number_of_outputs, 1)
-        third = y - repmat.T
-        _exp = np.exp(third)
-        E = np.sum(np.sum(np.dot(t, y.T))) - np.sum(max_error) - \
+        max_error = np.max(y, 1)
+        E = np.sum(t*y) - np.sum(max_error) - \
             np.sum(
             np.log(
-            np.sum(np.exp(y-np.tile(max_error, (self.number_of_outputs,
-                                                1)).T),
+            np.sum(np.exp(y - np.array([max_error, ]*self.number_of_outputs).T),
                    1))) - (0.5*self.lamda)*np.sum(np.sum(w2*w2))
         s = softmax(y)
         gradw2 = np.dot((t-s).T, z_with_bias) - self.lamda*w2
@@ -149,34 +155,50 @@ class NeuralNetwork:
         first =w2[:, 1:].T.dot((t-s).T)
         second = first*self.grad_activation(x_with_bias.dot(w1.T)).T
         final = second.dot(x_with_bias)
-        gradw1 = (w2[:, 1:].T.dot((t-s).T)*self.grad_activation(
-            x_with_bias.dot(w1.T)).T).dot(x_with_bias)
+        gradw1 = (w2[:, 1:].T.dot((t-s).T)*self.grad_activation(x_with_bias.dot(w1.T)).T).dot(x_with_bias)
 
         return E, gradw1, gradw2
 
     def train(self):
         e_old = -np.inf
         for i in range(iter):
-            error, gradw1, gradw2 = self.forward_prop(self.x_train, self.t,
-                                                      self.w1,
-                                                      self.w2)
-            print "iteration #", i, ",error =", error, ", gradw1 : " \
-                                                               , gradw1[0,0],\
-                ", gradw2 :", gradw2[0,0]
+            error, gradw1, gradw2 = self.forward_prop()
+            print "iteration #", i, ",error =", error, ", gradw1 : ", gradw1[0, 0], ", gradw2 :", gradw2[0, 0]
             if np.absolute(error - e_old) < self.tol:
                 break
             self.w1 = self.w1 + self.eta*gradw1
             self.w2 = self.w2 + self.eta*gradw2
             e_old = error
 
+    def test(self, t_test):
+        x = self.x_train
+        # feed forward
+        x_with_bias = np.ones((np.size(x, 0), np.size(x, 1)+1))
+        x_with_bias[:, 1:] = x
+        z = self.hidden_activation(np.dot(x_with_bias, self.w1.T))
+        # check matrix
+        # add bias to z
+        z_with_bias = np.ones((np.size(z, 0), np.size(z, 1)+1))
+        z_with_bias[:, 1:] = z
+        # multiplication and transpose
+        y = np.dot(z_with_bias, self.w2.T)
+        s = softmax(y)
+        #print s
+        decision = np.argmax(s, 1)
+        error_count = 0
+        for i in range(len(t_test)):
+            print t_test[i], decision[i]
+            if np.argmax(t_test[i]) != decision[i]:
+                error_count += 1
+        print "Error is ", error_count/t_test.shape[0], " %"
+
+
+
     def gradcheck(self):
 
         epsilon = np.finfo(float).eps
 
-        E, gradw1, gradw2 = self.forward_prop(self.x_train,
-                                              self.t,
-                                              self.w1,
-                                              self.w2)  # TODO lamda should
+        E, gradw1, gradw2 = self.forward_prop()  # TODO lamda should
         # be here
         print "gradw2 : ", gradw2.shape
         print "gradw1 : ", gradw1.shape
@@ -188,17 +210,11 @@ class NeuralNetwork:
             for d in range(0, numerical_grad_1.shape[1]):
                 w_tmp = np.copy(self.w1)
                 w_tmp[k, d] = w_tmp[k, d] + epsilon
-                e_plus, _, _ = self.forward_prop(self.x_train,
-                                                 self.t,
-                                                 w_tmp,
-                                                 self.w2)
+                e_plus, _, _ = self.forward_prop()
 
                 w_tmp = np.copy(self.w1)
                 w_tmp[k, d] = w_tmp[k, d] - epsilon
-                e_minus, _, _ = self.forward_prop(self.x_train,
-                                                  self.t,
-                                                  w_tmp,
-                                                  self.w2)
+                e_minus, _, _ = self.forward_prop()
 
                 numerical_grad_1[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
@@ -211,17 +227,11 @@ class NeuralNetwork:
             for d in range(0, numerical_grad_2.shape[1]):
                 w_tmp = np.copy(self.w2)
                 w_tmp[k, d] = w_tmp[k, d] + epsilon
-                e_plus, _, _ = self.forward_prop(self.x_train,
-                                                 self.t,
-                                                 self.w1,
-                                                 w_tmp)
+                e_plus, _, _ = self.forward_prop()
 
                 w_tmp = np.copy(self.w2)
                 w_tmp[k, d] = w_tmp[k, d] - epsilon
-                e_minus, _, _ = self.forward_prop(self.x_train,
-                                                  self.t,
-                                                  self.w1,
-                                                  w_tmp)
+                e_minus, _, _ = self.forward_prop()
 
                 numerical_grad_2[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
@@ -252,11 +262,12 @@ class Neuron:
 """
 
 if __name__ == '__main__':
-    x, test, t = load_data()
+    x, test, t_train, t_test = load_data()
     hidden_neurons = 200
     lamda = 0.1
     eta = 0.2
     iter = 50
     tol = 0.01
-    nn = NeuralNetwork(x, 3, hidden_neurons, 10, 0.1, iter, t, eta, tol)
+    nn = NeuralNetwork(x, 1, hidden_neurons, 10, 0.1, iter, t_train, eta, tol)
     nn.train()
+    nn.test(t_test)
