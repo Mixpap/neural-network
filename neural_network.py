@@ -1,14 +1,20 @@
 from __future__ import division
 import numpy as np
+#np.seterr(all='raise')
 import numpy.matlib
+import scipy.misc
+
 
 
 def softmax(w):
-    max_error = np.max(w, 1)
-    m = np.array([max_error, ]*w.shape[1]).T
+    max_of_rows = np.max(w, 1)
+    m = np.array([max_of_rows, ]*w.shape[1]).T
     w = w - m
+    # TODO : petaei inf kapoies fores to np.exp(w)
     w = np.exp(w)
     return w/(np.array([np.sum(w, 1),]*w.shape[1]).T)
+    # return np.exp(w - np.max(w)) / np.sum(np.exp(w - np.max(w)))
+
 
 
 def load_data():
@@ -27,6 +33,8 @@ def load_data():
             tmp += fp.readlines()
     # load test data in N*D array (10000x784 for MNIST)
     test_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')
+    print tmp[0]
+    print test_data[0, :]
     print "Test data array size: ", test_data.shape
     tmp = []
     for i, _file in enumerate(train_files):
@@ -38,6 +46,8 @@ def load_data():
             # truth.append([1 if j == i else 0 for j in range(0,10)] for
                 # line in fp)
     train_truth = np.array(tmp, dtype='int')
+    print tmp[0]
+    print train_truth[0]
     del tmp[:]
     for i, _file in enumerate(test_files):
         # print i, _file
@@ -115,9 +125,7 @@ class NeuralNetwork:
                  hidden_bias=None,
                  output_bias=None):
         self.iter = iter
-        x_with_bias = np.ones((np.size(x_train, 0), np.size(x_train, 1)+1))
-        x_with_bias[:, 1:] = x
-        self.x = x_with_bias
+        self.x = np.concatenate((np.ones((x_train.shape[0], 1)), x_train), axis=1)
         self.t = t
         self.lamda = lamda
         self.eta = eta
@@ -145,14 +153,12 @@ class NeuralNetwork:
         :return:
         """
         # feed forward
-        x = np.ones((np.size(x, 0), np.size(x, 1)))
-        if np.isinf(np.dot(x, w1.T)).any(): print "we have an inf"; raise RuntimeError
-        if np.isnan(np.dot(x, w1.T)).any(): print "we have an nan"; raise RuntimeError
+        # if np.isinf(np.dot(x, w1.T)).any(): print "we have an inf"; raise RuntimeError
+        # if np.isnan(np.dot(x, w1.T)).any(): print "we have an nan"; raise RuntimeError
         z = self.hidden_activation(np.dot(x, w1.T))
         # check matrix
         # add bias to z
-        z_with_bias = np.ones((np.size(z, 0), np.size(z, 1)+1))
-        z_with_bias[:, 1:] = z
+        z_with_bias = np.concatenate((np.ones((z.shape[0], 1)), z), axis=1)
         # multiplication and transpose
         y = np.dot(z_with_bias, w2.T)  # check transpose(normaly w2)
         max_error = np.max(y, 1)
@@ -182,42 +188,43 @@ class NeuralNetwork:
         e_old = -np.inf
         for i in range(iter):
             error, gradw1, gradw2 = self.forward_prop(self.x, self.t, self.w1, self.w2)
-            print "iteration #", i, ",error =", error, ", gradw1 : ", gradw1[0, 0], ", gradw2 :", gradw2[0, 0]
+            print "iteration #", i, ",error =", error
             if np.absolute(error - e_old) < self.tol:
                 break
             self.w1 += self.eta*gradw1
             self.w2 += self.eta*gradw2
             e_old = error
 
-    def test(self, t_test):
-        x = self.x
+    def test(self, test, test_truth):
+        # add bias to test
+        test = np.concatenate((np.ones((test.shape[0], 1)), test), axis=1)
+        x = test
         # feed forward
         z = self.hidden_activation(np.dot(x, self.w1.T))
         # check matrix
         # add bias to z
-        z_with_bias = np.ones((np.size(z, 0), np.size(z, 1)+1))
-        z_with_bias[:, 1:] = z
+        z_with_bias = np.concatenate((np.ones((z.shape[0], 1)), z), axis=1)
         # multiplication and transpose
         y = np.dot(z_with_bias, self.w2.T)
         s = softmax(y)
         # print s
         decision = np.argmax(s, 1)
         error_count = 0
-        for i in range(len(t_test)):
-            if np.argmax(t_test[i]) != decision[i]:
+        for i in range(len(test_truth)):
+            if np.argmax(test_truth[i]) != decision[i]:
                 error_count += 1
         print "errors: ", error_count
-        print "Error is ", error_count/t_test.shape[0]*100, " %"
+        print "Error is ", error_count/test_truth.shape[0]*100, " %"
 
     def gradcheck(self):
 
         epsilon = np.finfo(float).eps
-        _list =np.random.randint(self.x.shape[0], size=20)
+        _list = np.random.randint(self.x.shape[0], size=30)
         x_sample = np.array(self.x[_list, :])
         t_sample = np.array(self.t[_list, :])
         #x_sample = np.array([self.x[i] for i in tmp_list])
         #t_sample = np.array([self.t[i] for i in tmp_list])
-        E, gradw1, gradw2 = self.forward_prop(x_sample, t_sample , self.w1, self.w2)  # TODO lamda should be here
+        E, gradw1, gradw2 = self.forward_prop(x_sample, t_sample, self.w1, self.w2)  # TODO lamda should be here
         print "gradw2 : ", gradw2.shape
         print "gradw1 : ", gradw1.shape
         numerical_grad_1 = np.zeros(gradw1.shape)
@@ -235,7 +242,7 @@ class NeuralNetwork:
                 e_minus, _, _ = self.forward_prop(x_sample, t_sample, w_tmp, self.w2)
                 numerical_grad_1[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
-                # Absolute norm
+        # Absolute norm
         print "The absolute norm for w1 is : ", (np.amax(np.abs(gradw1 - numerical_grad_1)),)
 
         # gradcheck for w2
@@ -248,11 +255,10 @@ class NeuralNetwork:
                 w_tmp = np.copy(self.w2)
                 w_tmp[k, d] = w_tmp[k, d] - epsilon
                 e_minus, _, _ = self.forward_prop(x_sample, t_sample, self.w1, w_tmp)
-
                 numerical_grad_2[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
-                # Absolute norm
-        print "The absolute norm for w2 is %d" % (np.amax(np.abs(gradw1 - numerical_grad_1)),)
+        # Absolute norm
+        print "The absolute norm for w2 is %d" % (np.amax(np.abs(gradw1 - numerical_grad_2)),)
 
 
 """
@@ -278,13 +284,13 @@ class Neuron:
 """
 
 if __name__ == '__main__':
-    x, test, t_train, t_test = load_data()
+    x, test, train_truth, test_truth = load_data()
     hidden_neurons = 200
     lamda = 0.1
-    eta = 0.2
+    eta = 0.000008333
     iter = 10
-    tol = 0.01
-    nn = NeuralNetwork(x, 1, hidden_neurons, 0.1, iter, t_train, eta, tol)
-    #nn.train()
-    #nn.test(t_test)
-    nn.gradcheck()
+    tol = 0.000001
+    nn = NeuralNetwork(x, 3, hidden_neurons, lamda, iter, train_truth, eta, tol)
+    nn.train()
+    nn.test(test, test_truth)
+    #nn.gradcheck()
