@@ -99,10 +99,10 @@ def activation_function(case):
 
     def tanh(a): #  TODO check stability
         # return (np.exp(a)-np.exp(-a)) / (np.exp(a)+np.exp(-a))
-        return (np.exp(2*a)+1)/(np.exp(2*a)-1)
+        return 2 * grad_logarithm(2*a) - 1
 
     def grad_tanh(a):
-        return 1 - (np.exp(a)-np.exp(-a)) / (np.exp(a)+np.exp(-a))**2
+        return 4 * grad_logarithm(a) * (1 - grad_logarithm(a))
 
     def cosine(a):
         return np.cos(a)
