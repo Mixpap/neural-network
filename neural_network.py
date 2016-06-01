@@ -14,6 +14,8 @@ def softmax(w):
     return w/(np.array([np.sum(w, 1),]*w.shape[1]).T)
 
 
+def sigmoid(a):
+    return 1/(1 + np.exp(-a))
 
 def load_data():
     """
@@ -100,15 +102,15 @@ def activation_function(case):
         tmp = np.exp(-m)
         return a/(tmp+a)
         return a/(np.array([tmp+a,]*a.shape[1]).T)"""
-        return 1/(1+np.exp(-a))
+        return sigmoid(a)
 
     def tanh(a): #  TODO check stability
         # return (np.exp(a)-np.exp(-a)) / (np.exp(a)+np.exp(-a))
         return 2 * grad_logarithm(2*a) - 1
 
     def grad_tanh(a):
-        return 4 * grad_logarithm(a) * (1 - grad_logarithm(a))
-
+        #return 4 * grad_logarithm(a) * (1 - grad_logarithm(a))
+        return 4* np.exp(4*a)/(1 - np.exp(4*a))
     def cosine(a):
         return np.cos(a)
 
@@ -188,7 +190,7 @@ class NeuralNetwork:
 
         if np.isinf(self.grad_activation(x.dot(w1.T))).any() : print "we have an inf"; raise RuntimeError
         if np.isnan(self.grad_activation(x.dot(w1.T))).any() : print "we have an nan"; raise RuntimeError
-        gradw1 = (w2[:, 1:].T.dot((t-s).T)*self.grad_activation(x.dot(w1.T)).T).dot(x) - self.lamda*w1
+        gradw1 = (w2[:, 1:].T.dot((t-s).T)*self.grad_activation(x.dot(w1.T)).T).dot(x)
         # print "gradw1 shape: ", gradw1.shape, "||| gradw1 shape:", gradw2.shape
         return E, gradw1, gradw2
 
@@ -252,7 +254,8 @@ class NeuralNetwork:
                 numerical_grad_1[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
         # Absolute norm
-        print "The absolute norm for w1 is : ", (np.amax(np.abs(gradw1 - numerical_grad_1)),)
+        #print "The absolute norm for w1 is : ", (np.amax(np.abs(gradw1 - numerical_grad_1)),)
+        print "The difference estimate for gradient of w1 is : ", np.amax(np.abs(gradw1 - numerical_grad_1))
         # gradcheck for w2
         for k in range(0, numerical_grad_2.shape[0]):
             for d in range(0, numerical_grad_2.shape[1]):
@@ -266,7 +269,7 @@ class NeuralNetwork:
                 numerical_grad_2[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
         # Absolute norm
-        print "The absolute norm for w2 is %d" % (np.amax(np.abs(gradw2 - numerical_grad_2)),)
+        print "The difference estimate for gradient of w2 is : ", np.amax(np.abs(gradw2 - numerical_grad_2))
 
 
 """
@@ -308,7 +311,7 @@ if __name__ == '__main__':
     logarithmic = 1
     tanh = 2
     cosine = 3
-    nn = NeuralNetwork(x, 1, hidden_neurons, lamda, iter, train_truth, eta, tol)
+    nn = NeuralNetwork(x, 2, hidden_neurons, lamda, iter, train_truth, eta, tol)
     """if gradcheck_answer.lower() == "y".lower():
         nn.gradcheck()
         nn.train()
