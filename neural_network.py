@@ -10,14 +10,19 @@ def softmax(w):
     max_of_rows = np.max(w, 1)
     m = np.array([max_of_rows, ]*w.shape[1]).T
     w = w - m
-    # TODO : petaei inf kapoies fores to np.exp(w)
     w = np.exp(w)
     return w/(np.array([np.sum(w, 1),]*w.shape[1]).T)
-    # return np.exp(w - np.max(w)) / np.sum(np.exp(w - np.max(w)))
 
 
 
 def load_data():
+    """
+    Loads the MNIST dataset. Reads the training files and creates matrices.
+    :return: train_data:the matrix with the training data
+    test_data: the matrix with the data that will be used for testing
+    train_truth: the matrix consisting of one hot vectors on each row(ground truth for training)
+    test_truth: the matrix consisting of one hot vectors on each row(ground truth for testing)
+    """
     train_files = ['data/train%d.txt' % (i,) for i in range(10)]
     test_files = ['data/test%d.txt' % (i,) for i in range(10)]
     tmp = []
@@ -238,11 +243,11 @@ class NeuralNetwork:
         for k in range(0, numerical_grad_1.shape[0]):
             for d in range(0, numerical_grad_1.shape[1]):
                 w_tmp = np.copy(self.w1)
-                w_tmp[k, d] = w_tmp[k, d] + epsilon
+                w_tmp[k, d] += epsilon
                 e_plus, _, _ = self.forward_prop(x_sample, t_sample, w_tmp, self.w2)
 
                 w_tmp = np.copy(self.w1)
-                w_tmp[k, d] = w_tmp[k, d] - epsilon
+                w_tmp[k, d] -= epsilon
                 e_minus, _, _ = self.forward_prop(x_sample, t_sample, w_tmp, self.w2)
                 numerical_grad_1[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
@@ -252,11 +257,11 @@ class NeuralNetwork:
         for k in range(0, numerical_grad_2.shape[0]):
             for d in range(0, numerical_grad_2.shape[1]):
                 w_tmp = np.copy(self.w2)
-                w_tmp[k, d] = w_tmp[k, d] + epsilon
+                w_tmp[k, d] += epsilon
                 e_plus, _, _ = self.forward_prop(x_sample, t_sample, self.w1, w_tmp)
 
                 w_tmp = np.copy(self.w2)
-                w_tmp[k, d] = w_tmp[k, d] - epsilon
+                w_tmp[k, d] -= epsilon
                 e_minus, _, _ = self.forward_prop(x_sample, t_sample, self.w1, w_tmp)
                 numerical_grad_2[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
@@ -287,16 +292,30 @@ class Neuron:
 """
 
 if __name__ == '__main__':
+    """print "Welcome to the world of Neural Networks.\nLets classify the MNIST dataset..."
+    hidden_neurons = int(raw_input("How many neurons would you like: "))
+    activation_function = int(raw_input("Which activation function would you like to "
+                                    "use?:\n1.logarithmic\n2.tanh\n3.cosine\n(insert number 1-3)\n "))
+    gradcheck_answer = raw_input("Would you like to run gradient check before? (Y/N): ")
+    hidden_neurons = int(hidden_neurons)
+    activation_function = int(activation_function)"""
     x, test, train_truth, test_truth = load_data()
-    hidden_neurons = 300
+    hidden_neurons = 50
     lamda = 0.1
     eta = 0.5/x.shape[0]
-    iter = 500
+    iter = 50
     tol = 0.000001
     logarithmic = 1
     tanh = 2
     cosine = 3
-    nn = NeuralNetwork(x, logarithmic, hidden_neurons, lamda, iter, train_truth, eta, tol)
-    nn.train()
-    nn.test(test, test_truth)
-    #nn.gradcheck()
+    nn = NeuralNetwork(x, 1, hidden_neurons, lamda, iter, train_truth, eta, tol)
+    """if gradcheck_answer.lower() == "y".lower():
+        nn.gradcheck()
+        nn.train()
+        nn.test(test, test_truth)
+    else:
+        nn.train()
+        nn.test(test, test_truth)"""
+    nn.gradcheck()
+    #nn.train()
+    #nn.test(test, test_truth)
