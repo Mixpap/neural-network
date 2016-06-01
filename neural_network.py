@@ -24,14 +24,14 @@ def load_data():
     for i in train_files:
         with open(i, 'r') as fp:
             tmp += fp.readlines()
-    # load train data in N*D array (60000x784 for MNIST)
+    # load train data in N*D array (60000x784 for MNIST) divided by 255 to achieve normalization
     train_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')/255
     print "Train data array size: ", train_data.shape
     tmp = []
     for i in test_files:
         with open(i, 'r') as fp:
             tmp += fp.readlines()
-    # load test data in N*D array (10000x784 for MNIST)
+    # load test data in N*D array (10000x784 for MNIST) divided by 255 to achieve normalization
     test_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')/255
     # print tmp[0]
     # print test_data[0, :]
@@ -141,7 +141,7 @@ class NeuralNetwork:
         print "W(1) is of size M x(D+1) :", self.w1.shape
         # print type(self.w1), type(self.w1[0]), type(self.w1[0,0])
         # try W2 as zeros
-        self.w2 = np.random.randn(self.number_of_outputs, self.hidden_neurons+1)*0
+        self.w2 = np.random.rand(self.number_of_outputs, self.hidden_neurons+1)
         print "W(2) is of size K x(M+1) :", self.w2.shape
 
     def forward_prop(self, x, t, w1, w2):
@@ -163,7 +163,7 @@ class NeuralNetwork:
         # add bias to z
         z_with_bias = np.concatenate((np.ones((z.shape[0], 1)), z), axis=1)
         # multiplication and transpose
-        y = np.dot(z_with_bias, w2.T)  # check transpose(normaly w2)
+        y = np.dot(z_with_bias, w2.T)  # check transpose(normally w2)
         max_error = np.max(y, 1)
         E = np.sum(t*y) - np.sum(max_error) - \
             np.sum(
@@ -221,8 +221,9 @@ class NeuralNetwork:
 
     def gradcheck(self):
 
-        epsilon = np.finfo(float).eps
-        _list = np.random.randint(self.x.shape[0], size=30)
+        #epsilon = np.finfo(float).eps
+        epsilon = 1e-6
+        _list = np.random.randint(self.x.shape[0], size=5)
         x_sample = np.array(self.x[_list, :])
         t_sample = np.array(self.t[_list, :])
         #x_sample = np.array([self.x[i] for i in tmp_list])
@@ -247,7 +248,6 @@ class NeuralNetwork:
 
         # Absolute norm
         print "The absolute norm for w1 is : ", (np.amax(np.abs(gradw1 - numerical_grad_1)),)
-
         # gradcheck for w2
         for k in range(0, numerical_grad_2.shape[0]):
             for d in range(0, numerical_grad_2.shape[1]):
@@ -261,7 +261,7 @@ class NeuralNetwork:
                 numerical_grad_2[k, d] = (e_plus - e_minus) / (2 * epsilon)
 
         # Absolute norm
-        print "The absolute norm for w2 is %d" % (np.amax(np.abs(gradw1 - numerical_grad_2)),)
+        print "The absolute norm for w2 is %d" % (np.amax(np.abs(gradw2 - numerical_grad_2)),)
 
 
 """
@@ -288,10 +288,10 @@ class Neuron:
 
 if __name__ == '__main__':
     x, test, train_truth, test_truth = load_data()
-    hidden_neurons = 200
+    hidden_neurons = 300
     lamda = 0.1
     eta = 0.5/x.shape[0]
-    iter = 100
+    iter = 500
     tol = 0.000001
     logarithmic = 1
     tanh = 2
