@@ -85,6 +85,7 @@ def activation_function(case):
     def grad_tanh(a):
         return 1 - tanh(a) ** 2
 
+
     def cosine(a):
         return np.cos(a)
 
@@ -155,6 +156,7 @@ class NeuralNetwork:
             self.w1 += self.eta * gradw1
             self.w2 += self.eta * gradw2
             e_old = error
+        return error
 
     def test(self, test, test_truth):
         # add bias to test
@@ -173,6 +175,7 @@ class NeuralNetwork:
             if np.argmax(test_truth[i]) != decision[i]:
                 error_count += 1
         print "Error is ", error_count / test_truth.shape[0] * 100, " %"
+
 
     def gradcheck(self):
         epsilon = 1e-6
@@ -221,7 +224,7 @@ if __name__ == '__main__':
     hidden_neurons = int(hidden_neurons)
     act_function = int(act_function)
     x, test, train_truth, test_truth = load_data()
-    hidden_neurons = 50
+    hidden_neurons = 500
     lamda = 0.1
     eta = 0.5 / x.shape[0]
     iter = 100
@@ -231,3 +234,13 @@ if __name__ == '__main__':
         nn.gradcheck()
     nn.train()
     nn.test(test, test_truth)
+
+    neurons = [100, 200, 300, 400, 500]
+    for neurons in neurons:
+        nn = NeuralNetwork(x, 1, neurons, lamda, iter, train_truth, eta, tol)
+        cost = nn.train()
+        error = nn.test(test, test_truth)
+        s = "For " + str(iter) + " iterations, and " + str(neurons) + " neurons, the value of the cost function  is " + \
+            str(cost) + ", and the error rate is " + str(error) + "%\n"
+        with open('results.txt', 'a') as fp:
+            fp.write(s)
