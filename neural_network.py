@@ -25,16 +25,16 @@ def load_data():
         with open(i, 'r') as fp:
             tmp += fp.readlines()
     # load train data in N*D array (60000x784 for MNIST)
-    train_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')
+    train_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')/255
     print "Train data array size: ", train_data.shape
     tmp = []
     for i in test_files:
         with open(i, 'r') as fp:
             tmp += fp.readlines()
     # load test data in N*D array (10000x784 for MNIST)
-    test_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')
-    print tmp[0]
-    print test_data[0, :]
+    test_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')/255
+    # print tmp[0]
+    # print test_data[0, :]
     print "Test data array size: ", test_data.shape
     tmp = []
     for i, _file in enumerate(train_files):
@@ -46,8 +46,8 @@ def load_data():
             # truth.append([1 if j == i else 0 for j in range(0,10)] for
                 # line in fp)
     train_truth = np.array(tmp, dtype='int')
-    print tmp[0]
-    print train_truth[0]
+    # print tmp[0]
+    # print train_truth[0]
     del tmp[:]
     for i, _file in enumerate(test_files):
         # print i, _file
@@ -135,10 +135,13 @@ class NeuralNetwork:
         self.hidden_activation, self.grad_activation = activation_function(
             hidden_layer_activation_function)
         # initialize weights
-        self.w1 = np.random.randn(self.hidden_neurons, np.size(self.x, 1))
+        # try rand to have weights around 0 (*0.2-0.1)
+        # self.w1 = np.random.randn(self.hidden_neurons, np.size(self.x, 1))*(1/np.matlib.sqrt(self.hidden_neurons+1))
+        self.w1 = np.random.rand(self.hidden_neurons, np.size(self.x, 1))*0.2-0.1
         print "W(1) is of size M x(D+1) :", self.w1.shape
         # print type(self.w1), type(self.w1[0]), type(self.w1[0,0])
-        self.w2 = np.random.randn(self.number_of_outputs, self.hidden_neurons+1)
+        # try W2 as zeros
+        self.w2 = np.random.randn(self.number_of_outputs, self.hidden_neurons+1)*0
         print "W(2) is of size K x(M+1) :", self.w2.shape
 
     def forward_prop(self, x, t, w1, w2):
@@ -180,7 +183,7 @@ class NeuralNetwork:
 
         if np.isinf(self.grad_activation(x.dot(w1.T))).any() : print "we have an inf"; raise RuntimeError
         if np.isnan(self.grad_activation(x.dot(w1.T))).any() : print "we have an nan"; raise RuntimeError
-        gradw1 = (w2[:, 1:].T.dot((t-s).T)*self.grad_activation(x.dot(w1.T)).T).dot(x)
+        gradw1 = (w2[:, 1:].T.dot((t-s).T)*self.grad_activation(x.dot(w1.T)).T).dot(x) - self.lamda*w1
         # print "gradw1 shape: ", gradw1.shape, "||| gradw1 shape:", gradw2.shape
         return E, gradw1, gradw2
 
@@ -287,10 +290,13 @@ if __name__ == '__main__':
     x, test, train_truth, test_truth = load_data()
     hidden_neurons = 200
     lamda = 0.1
-    eta = 0.000008333
-    iter = 10
+    eta = 0.5/x.shape[0]
+    iter = 100
     tol = 0.000001
-    nn = NeuralNetwork(x, 3, hidden_neurons, lamda, iter, train_truth, eta, tol)
+    logarithmic = 1
+    tanh = 2
+    cosine = 3
+    nn = NeuralNetwork(x, logarithmic, hidden_neurons, lamda, iter, train_truth, eta, tol)
     nn.train()
     nn.test(test, test_truth)
     #nn.gradcheck()
