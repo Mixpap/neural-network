@@ -272,28 +272,6 @@ class NeuralNetwork:
         print "The difference estimate for gradient of w2 is : ", np.amax(np.abs(gradw2 - numerical_grad_2))
 
 
-"""
-class Layer:
-
-    def __init__(self, num_of_neurons, bias=None):
-        self.num_of_neurons = num_of_neurons
-        self.neurons = [random.random() for i in range(num_of_neurons)]
-        self.bias = bias
-
-    def get_info(self):
-        print ', '.join("%s: %s" % item for item in vars(self).items())
-
-
-class Neuron:
-
-    def __init__(self, weights):
-        self.weights = weights
-
-    def get_info(self):
-        print ', '.join("%s: %s" % item for item in vars(self).items())
-
-"""
-
 if __name__ == '__main__':
     """print "Welcome to the world of Neural Networks.\nLets classify the MNIST dataset..."
     hidden_neurons = int(raw_input("How many neurons would you like: "))
