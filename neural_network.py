@@ -4,14 +4,15 @@ import numpy as np
 
 def softmax(w):
     max_of_rows = np.max(w, 1)
-    m = np.array([max_of_rows, ]*w.shape[1]).T
+    m = np.array([max_of_rows, ] * w.shape[1]).T
     w = w - m
     w = np.exp(w)
-    return w/(np.array([np.sum(w, 1),]*w.shape[1]).T)
+    return w / (np.array([np.sum(w, 1), ] * w.shape[1]).T)
 
 
 def sigmoid(a):
-    return 1/(1 + np.exp(-a))
+    return 1 / (1 + np.exp(-a))
+
 
 def load_data():
     """
@@ -28,14 +29,14 @@ def load_data():
         with open(i, 'r') as fp:
             tmp += fp.readlines()
     # load train data in N*D array (60000x784 for MNIST) divided by 255 to achieve normalization
-    train_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')/255
+    train_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int') / 255
     print "Train data array size: ", train_data.shape
     tmp = []
     for i in test_files:
         with open(i, 'r') as fp:
             tmp += fp.readlines()
     # load test data in N*D array (10000x784 for MNIST) divided by 255 to achieve normalization
-    test_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int')/255
+    test_data = np.array([[j for j in i.split(" ")] for i in tmp], dtype='int') / 255
     print "Test data array size: ", test_data.shape
     tmp = []
     for i, _file in enumerate(train_files):
@@ -46,7 +47,7 @@ def load_data():
     del tmp[:]
     for i, _file in enumerate(test_files):
         with open(_file, 'r') as fp:
-            for line in fp:
+            for _ in fp:
                 tmp.append([1 if j == i else 0 for j in range(0, 10)])
     test_truth = np.array(tmp, dtype='int')
     print "Train truth array size: ", train_truth.shape
@@ -73,16 +74,16 @@ def activation_function(case):
         :return:
         """
         m = np.maximum(0, a)
-        return m + np.log(np.exp(-m) + np.exp(a-m))
+        return m + np.log(np.exp(-m) + np.exp(a - m))
 
     def grad_logarithm(a):
         return sigmoid(a)
 
     def tanh(a):
-        return 2 * sigmoid(2*a) - 1
+        return 2 * sigmoid(2 * a) - 1
 
     def grad_tanh(a):
-        return 1 - tanh(a)**2
+        return 1 - tanh(a) ** 2
 
     def cosine(a):
         return np.cos(a)
@@ -112,10 +113,10 @@ class NeuralNetwork:
         self.hidden_activation, self.grad_activation = activation_function(
             hidden_layer_activation_function)
         # initialize weights
-        self.w1 = np.random.rand(self.hidden_neurons, np.size(self.x, 1))*0.2-0.1
+        self.w1 = np.random.rand(self.hidden_neurons, np.size(self.x, 1)) * 0.2 - 0.1
         print "W(1) is of size M x(D+1) :", self.w1.shape
         # try W2 as zeros
-        self.w2 = np.random.rand(self.number_of_outputs, self.hidden_neurons+1)
+        self.w2 = np.random.rand(self.number_of_outputs, self.hidden_neurons + 1)
         print "W(2) is of size K x(M+1) :", self.w2.shape
 
     def forward_prop(self, x, t, w1, w2):
@@ -134,14 +135,14 @@ class NeuralNetwork:
         # multiplication and transpose
         y = np.dot(z_with_bias, w2.T)
         max_error = np.max(y, 1)
-        E = np.sum(t*y) - np.sum(max_error) - \
-            np.sum(np.log(np.sum(np.exp(y - np.array([max_error, ]*self.number_of_outputs).T),1))) - \
-            (0.5*self.lamda)*np.sum(w2*w2)
+        E = np.sum(t * y) - np.sum(max_error) - \
+            np.sum(np.log(np.sum(np.exp(y - np.array([max_error, ] * self.number_of_outputs).T), 1))) - \
+            (0.5 * self.lamda) * np.sum(w2 * w2)
         s = softmax(y)
         # calculate gradient of W2
-        gradw2 = np.dot((t-s).T, z_with_bias) - self.lamda*w2
+        gradw2 = np.dot((t - s).T, z_with_bias) - self.lamda * w2
         # calculate gradient of W1 (we get rid of the bias from w2)
-        gradw1 = (w2[:, 1:].T.dot((t-s).T)*self.grad_activation(x.dot(w1.T)).T).dot(x)
+        gradw1 = (w2[:, 1:].T.dot((t - s).T) * self.grad_activation(x.dot(w1.T)).T).dot(x)
         return E, gradw1, gradw2
 
     def train(self):
@@ -151,8 +152,8 @@ class NeuralNetwork:
             print "iteration #", i, ",error =", error
             if np.absolute(error - e_old) < self.tol:
                 break
-            self.w1 += self.eta*gradw1
-            self.w2 += self.eta*gradw2
+            self.w1 += self.eta * gradw1
+            self.w2 += self.eta * gradw2
             e_old = error
 
     def test(self, test, test_truth):
@@ -171,7 +172,7 @@ class NeuralNetwork:
         for i in range(len(test_truth)):
             if np.argmax(test_truth[i]) != decision[i]:
                 error_count += 1
-        print "Error is ", error_count/test_truth.shape[0]*100, " %"
+        print "Error is ", error_count / test_truth.shape[0] * 100, " %"
 
     def gradcheck(self):
         epsilon = 1e-6
@@ -212,30 +213,21 @@ class NeuralNetwork:
 
 
 if __name__ == '__main__':
-    """print "Welcome to the world of Neural Networks.\nLets classify the MNIST dataset..."
+    print "Welcome to the world of Neural Networks.\nLets classify the MNIST dataset..."
     hidden_neurons = int(raw_input("How many neurons would you like: "))
-    activation_function = int(raw_input("Which activation function would you like to "
-                                    "use?:\n1.logarithmic\n2.tanh\n3.cosine\n(insert number 1-3)\n "))
+    act_function = int(raw_input("Which activation function would you like to "
+                                 "use?:\n1.logarithmic\n2.tanh\n3.cosine\n(insert number 1-3)\n "))
     gradcheck_answer = raw_input("Would you like to run gradient check before? (Y/N): ")
     hidden_neurons = int(hidden_neurons)
-    activation_function = int(activation_function)"""
+    act_function = int(act_function)
     x, test, train_truth, test_truth = load_data()
     hidden_neurons = 50
     lamda = 0.1
-    eta = 0.5/x.shape[0]
+    eta = 0.5 / x.shape[0]
     iter = 100
     tol = 0.000001
-    logarithmic = 1
-    tanh = 2
-    cosine = 3
-    nn = NeuralNetwork(x, 2, hidden_neurons, lamda, iter, train_truth, eta, tol)
-    """if gradcheck_answer.lower() == "y".lower():
+    nn = NeuralNetwork(x, act_function, hidden_neurons, lamda, iter, train_truth, eta, tol)
+    if gradcheck_answer.lower() == "y".lower():
         nn.gradcheck()
-        nn.train()
-        nn.test(test, test_truth)
-    else:
-        nn.train()
-        nn.test(test, test_truth)"""
-    nn.gradcheck()
-    #nn.train()
-    #nn.test(test, test_truth)
+    nn.train()
+    nn.test(test, test_truth)
