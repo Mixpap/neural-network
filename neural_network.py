@@ -113,7 +113,7 @@ class NeuralNetwork:
         self.hidden_activation, self.grad_activation = activation_function(
             hidden_layer_activation_function)
         # initialize weights
-        self.w1 = np.random.rand(self.hidden_neurons, np.size(self.x, 1)) * 0.2 - 0.1
+        self.w1 = np.random.rand(self.hidden_neurons, self.x.shape[1]) * 0.2 - 0.1
         print "W(1) is of size M x(D+1) :", self.w1.shape
         # try W2 as zeros
         self.w2 = np.random.rand(self.number_of_outputs, self.hidden_neurons + 1)
